@@ -141,8 +141,7 @@ def execute(path):
     interpreter = Interpreter(numbered_lines)
     interpreter.start_execution()
 
-    for id, value in interpreter.state.items():
-        print(f"{id} : {value}")
+    return interpreter.state
 
 
 DEBUG = False
@@ -154,19 +153,25 @@ def main():
         DEBUG = True
 
     path = None
-
+    output_path = "results.txt"
     if "-f" in arguments:
         path = arguments[arguments.index("-f") + 1]
 
     if "--file" in arguments:
         path = arguments[arguments.index("--file") + 1]
 
+    if "-o" in arguments:
+        output_path = arguments[arguments.index("-o") + 1]
+
+    if "--output" in arguments:
+        output_path = arguments[arguments.index("--output") + 1]
+
     if path is None:
         print(f"Error : no file path given")
         return
 
     try:
-        execute(path)
+        results = execute(path)
     except FileException as e:
         print(f"Error : {e.args[0]}")
         if DEBUG:
@@ -175,6 +180,10 @@ def main():
         print(f"Error on line {e.args[1]} : {e.args[0]}")
         if DEBUG:
             raise e
+    else:
+        with open(output_path, "w+") as f:
+            for id, value in results.items():
+                f.write(f"{id} : {value}\n")
 
 
 if __name__ == '__main__':
