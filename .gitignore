@@ -1,0 +1,7 @@
+/build
+/dist
+/venv
+/.idea
+Interpreter.spec
+test.txt
+/__pycache__
