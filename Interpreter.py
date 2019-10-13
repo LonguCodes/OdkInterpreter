@@ -19,13 +19,14 @@ double_functions = {
     "-": sub,
     "*": mul,
     "/": idiv,
-    "=": eq,
-    "<": lt,
-    ">": gt,
     "<=": le,
     ">=": ge,
     "!=": ne,
-    "=!": ne
+    "=!": ne,
+    "=": eq,
+    "<": lt,
+    ">": gt,
+
 }
 consts = {
     'pi': pi,
@@ -48,7 +49,7 @@ class Interpreter:
         self.state = {}
         self.current_line = 1
 
-    def get_value(self, identifier):
+    def get_value(self, identifier, can_recure = True):
         try:
             return int(identifier)
         except:
@@ -59,7 +60,9 @@ class Interpreter:
                     return consts[identifier]
                 if identifier in self.state:
                     return self.state[identifier]
-                raise LexicException(f"Unknown identifier: {identifier}", self.current_line)
+                if can_recure:
+                    return self.evaluate_expression(identifier)
+                raise LexicException(f"Unknown identifier {identifier}", self.current_line)
 
     def start_execution(self):
         while self.current_line < len(self.lines):
@@ -67,15 +70,11 @@ class Interpreter:
                 self.current_line += 1
 
     def evaluate_expression(self, expression):
-        for fun in single_functions:
-            rx = regex.search(rf"{fun}\ *([^\ ]*)\ *", expression)
-            if rx is not None:
-                identifier = rx.groups()[0]
-                value = self.get_value(identifier)
-                return single_functions[fun](value)
-
+        print(expression)
         for fun in double_functions:
-            rx = regex.search(rf"\ *([^\ ]*)\ *\{fun}\ *([^\ ]*$)\ *", expression)
+
+            rx = regex.search(rf"\ *(.*)\ *\{fun}\ *(.*)\ *", expression)
+
             if rx is not None:
                 ident1, ident2 = rx.groups()
                 value1 = self.get_value(ident1)
@@ -83,11 +82,18 @@ class Interpreter:
 
                 return double_functions[fun](value1, value2)
 
+        for fun in single_functions:
+            rx = regex.search(rf"{fun}\ *(.*)\ *", expression)
+            if rx is not None:
+                identifier = rx.groups()[0]
+                value = self.get_value(identifier)
+                return single_functions[fun](value)
+
         rx = regex.search(r"^ *([^ ]*) *$", expression)
 
         if rx is not None:
             identifier = rx.groups()[0]
-            value = self.get_value(identifier)
+            value = self.get_value(identifier, False)
             return value
         raise LexicException("Incorrect syntax", self.current_line)
 
@@ -137,17 +143,16 @@ def execute(path):
     file = open(path, 'r')
     lines = list(map(lambda x: str.replace(x, "\n", ""), file.readlines()))
     numbered_lines = dict(map(get_numbered_line, zip(lines, range(1, len(lines) + 1))))
-
+    if regex.match("\ *end\ *", numbered_lines[len(numbered_lines)].lower()) is None:
+        raise LexicException("There is no end statement", len(numbered_lines))
     interpreter = Interpreter(numbered_lines)
     interpreter.start_execution()
 
     return interpreter.state
 
 
-DEBUG = False
-
-
 def main():
+    DEBUG = False
     arguments = sys.argv
     if "-d" in arguments or "--debug" in arguments:
         DEBUG = True
@@ -181,6 +186,8 @@ def main():
         if DEBUG:
             raise e
     else:
+        if DEBUG:
+            print(results)
         with open(output_path, "w+") as f:
             for id, value in results.items():
                 f.write(f"{id} : {value}\n")

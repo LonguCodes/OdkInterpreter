@@ -2,7 +2,6 @@
 /dist
 /venv
 /.idea
-Interpreter.spec
-test.txt
 /__pycache__
-results.txt
+*.txt
+*.spec
